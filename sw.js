@@ -1,5 +1,5 @@
 // 오프라인용 캐시. 파일을 고쳐 올릴 때는 VERSION 숫자를 하나 올려 주세요.
-const VERSION = "hsk-v1";
+const VERSION = "hsk-v2";
 const FILES = ["./", "index.html", "words.js", "gloss.js", "hanzi.js", "manifest.webmanifest", "icon-512.png", "apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
