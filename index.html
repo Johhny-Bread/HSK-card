@@ -236,17 +236,23 @@ const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Mat
 
 /* ---------- haptics (진동) ---------- */
 // 안드로이드: navigator.vibrate / 아이폰(iOS 18+ Safari): 숨긴 스위치 토글로 햅틱
-const HAP = (() => {
-  const lb = document.createElement("label");
-  lb.style.cssText = "position:fixed;left:-9999px;width:1px;height:1px;overflow:hidden";
-  lb.setAttribute("aria-hidden", "true");
-  const ip = document.createElement("input");
-  ip.type = "checkbox"; ip.setAttribute("switch", ""); ip.tabIndex = -1;
-  lb.appendChild(ip); document.body.appendChild(lb);
-  return lb;
-})();
+const APP_VER = "v3";
 const canVib = typeof navigator.vibrate === "function";
-function iosTap(){ try { HAP.click(); } catch(e){} }
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function iosTap(){
+  // 매번 새 스위치를 만들어 눌렀다가 지움 (iOS 18+ Safari 시스템 햅틱)
+  try {
+    const lb = document.createElement("label"); lb.ariaHidden = "true"; lb.style.display = "none";
+    const ip = document.createElement("input"); ip.type = "checkbox"; ip.setAttribute("switch", "");
+    lb.appendChild(ip); document.head.appendChild(lb); lb.click(); document.head.removeChild(lb);
+  } catch(e){}
+}
+function hapticInfo(){
+  if (canVib) return "안드로이드 진동 사용";
+  if (isIOS){ const m = navigator.userAgent.match(/OS (\d+)_/); const v = m ? +m[1] : 0;
+    return v && v < 18 ? `iOS ${v}: 진동 미지원 (iOS 18 이상 필요)` : `아이폰 햅틱 사용${v ? " (iOS " + v + ")" : ""}`; }
+  return "이 브라우저는 진동 미지원";
+}
 function tap(){ if (canVib) navigator.vibrate(12); else iosTap(); }
 function buzzWrong(){
   if (canVib) navigator.vibrate([70, 60, 70]);
@@ -471,6 +477,9 @@ function renderHome(){
       <div class="seg" id="npd">${[10,20,30].map(n=>`<button aria-pressed="${S.newPerDay===n}" data-n="${n}">${n}개</button>`).join("")}</div></div>
     <div class="setting"><label>범위</label>
       <div class="seg" id="lvls">${[["4","4급만"],["5","5급만"],["45","4급 + 5급"]].map(([k,t])=>`<button aria-pressed="${S.levels===k}" data-k="${k}">${t}</button>`).join("")}</div></div>
+    <div class="setting"><label>진동</label>
+      <div class="seg" id="vibt"><button data-v="1">짧게 테스트</button><button data-v="2">오답 테스트</button></div></div>
+    <div class="small muted" style="text-align:center">${hapticInfo()} · 앱 ${APP_VER}</div>
     <div class="foot">진도는 이 기기 브라우저에 저장돼요 · 신HSK 4급 ${W.filter(w=>w.l===4).length} · 5급 ${W.filter(w=>w.l===5).length} · 보충 ${W.filter(w=>!w.l).length}<br>단어 목록 출처: <a href="https://github.com/drkameleon/complete-hsk-vocabulary" target="_blank" rel="noopener">complete-hsk-vocabulary</a> (MIT)</div>
   </div>`;
   document.getElementById("start").onclick = () => startSession("all");
@@ -481,6 +490,7 @@ function renderHome(){
   document.getElementById("toList").onclick = () => renderList("all");
   document.getElementById("npd").onclick = e => { const b = e.target.closest("button"); if (!b) return; S.newPerDay = +b.dataset.n; save(); renderHome(); };
   document.getElementById("lvls").onclick = e => { const b = e.target.closest("button"); if (!b) return; S.levels = b.dataset.k; save(); renderHome(); };
+  document.getElementById("vibt").onclick = e => { const b = e.target.closest("button"); if (b && b.dataset.v === "2") buzzWrong(); };
   addNav("home");
 }
 
